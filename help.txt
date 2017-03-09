@@ -1,0 +1,4 @@
+Welcome to Mastermind!
+  Enter your colors for a guess in a row separated by spaces, like so: 'blue green orange purple'. The program will parse your input and give feedback on results of the guess.
+
+  Read more about the game on Wikipedia - https://en.wikipedia.org/wiki/Mastermind (board_game)
