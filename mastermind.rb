@@ -37,8 +37,8 @@ class Game
     correct_counter = 0
     color_match_counter = 0
     color_catcher = Hash.new(0)
+    input.each { |color| color_catcher[color] += 1 }
     input.each_with_index do |color, index|
-      color_catcher[color] += 1
       if @computer.secret_code[index] == input[index]
         correct_counter += 1
       elsif @computer.secret_code.include?(color) && color_catcher[color] < 2
@@ -61,6 +61,7 @@ class Game
         puts "Try again..."
       elsif @turns_limit == 0
         puts "You ran out of limit in 12 guesses..."
+        puts "Computer's code was | #{code.join(" | ")} |"
       end
     end
   end
