@@ -13,7 +13,6 @@ class Game
     puts "Would you like to be the codemaker or codebreaker?"
     print ">"
     answer = gets.strip.scan(/[a-zA-Z]+/)
-    # answer = "codemaker"    # For faster testing
     if answer.include?("codebreaker") && !answer.include?("codemaker")
       @computer.generate_code(@colors)
       puts "You have #{@turns_limit} turns to guess the code."
@@ -41,16 +40,16 @@ class Game
       puts "Enter your secret code: "
       print ">"
       users_secret_code = gets.strip.scan(/[a-zA-Z]+/)
-      # users_secret_code = %w{blue red black green}    # For faster testing
       if users_secret_code.size == 4 && (users_secret_code - @colors).size == 0
         puts "Computer has #{@turns_limit} turns to guess the code.\n\n"
         begin
           @computer.generate_guess(@colors)
           @turns_limit -= 1
           puts "Computer's guess is | #{@computer.guess_code.join(' | ')} |"
+          sleep 2
           victory = feedback(@computer.guess_code, users_secret_code, "computer")
           puts "\n"
-          puts "#" * 60
+          puts "#" * 60 unless victory || @turns_limit == 0
           puts "\n"
         end until victory || @turns_limit == 0
       elsif users_secret_code.join == "help"
@@ -86,7 +85,7 @@ private
     if codebreaker == "user"
       if correct_counter == 4
         puts "You guessed the code!"
-        puts "The code is | #{code.join(" | ")} |"
+        puts "The code is | #{secret_code.join(" | ")} |"
         true
       elsif @turns_limit > 0
         puts "#{@turns_limit} more turns left."
@@ -100,10 +99,11 @@ private
     elsif codebreaker == "computer"
       if correct_counter == 4
         puts "Computer guessed the code!"
-        puts "The code is | #{code.join(" | ")} |"
+        puts "The code is | #{secret_code.join(" | ")} |"
         true
       elsif @turns_limit > 0
         puts "#{@turns_limit} more turns left."
+        @computer.correct_counter = correct_counter
         puts "Computer is trying again..."
         false
       elsif @turns_limit == 0
@@ -116,10 +116,10 @@ private
 end
 
 class Computer
+  attr_accessor :correct_counter
   attr_reader :secret_code, :guess_code
 
   def initialize
-    # puts "Computer is ready..." # For fun sake :-D
     @secret_code = []
   end
 
@@ -135,14 +135,52 @@ class Computer
 
   def generate_guess(colors)
     @guess_code = []
-    puts "Computer makes a guess..."
-    sleep 3
-    4.times do
-      @guess_code << rand(6)
+    @previous_code ||= []
+    @ignore_index = []
+    @previous_ignore_index ||= []
+    @correct_counter ||= 0
+    @previous_correct_counter ||= 0
+    puts "Computer makes a guess...\n\n"
+    sleep 1
+
+    # Delete reserved indices if result of correct colors is worse then before
+    if @previous_correct_counter > @correct_counter
+      (@previous_correct_counter - @correct_counter).times do
+        @previous_ignore_index.delete_at(rand(@previous_ignore_index.length))
+      end
     end
+
+    # Add previously reserved indices to currently reserved
+    if @previous_ignore_index.size > 0
+      @ignore_index = @previous_ignore_index
+    end
+
+    # Reserve indices
+    if @correct_counter > @previous_correct_counter
+      (@correct_counter - @ignore_index.size).times do |i|
+        random_number = rand(4)
+        redo if @ignore_index.include?(random_number)
+        @ignore_index << random_number
+      end
+    end
+
+    # Generate code, but skip reserved indices
+    4.times do |i|
+      if @ignore_index.include?(i)
+        @guess_code[i] = @previous_code[i]
+        next
+      end
+      @guess_code[i] = rand(6)
+    end
+
+    # Convert numbers to color names
     @guess_code.each_with_index do |item, index|
-      @guess_code[index] = colors[item]
+      @guess_code[index] = colors[item] unless item.class == String
     end
+
+    @previous_code = @guess_code
+    @previous_correct_counter = @correct_counter
+    @previous_ignore_index = @ignore_index
     @guess_code
   end
 end
